@@ -1,0 +1,4 @@
+- [x] Update navbar in index.html to add link to #projects
+- [x] Add projects section in index.html after skills
+- [x] Add CSS styles for .projects in style.css
+- [ ] Test the site by launching in browser

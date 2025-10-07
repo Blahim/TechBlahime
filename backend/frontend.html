@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Manage Skills and Projects</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h2 { margin-top: 40px; }
+        form { margin-bottom: 20px; }
+        label { display: block; margin-top: 10px; }
+        input, textarea { width: 300px; padding: 5px; }
+        button { margin-top: 10px; padding: 5px 10px; }
+        ul { list-style: none; padding: 0; }
+        li { margin-bottom: 10px; }
+        .item { border: 1px solid #ccc; padding: 10px; width: 350px; }
+        .actions { margin-top: 5px; }
+        .actions button { margin-right: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Manage Skills and Projects</h1>
+
+    <section id="skills-section">
+        <h2>Skills</h2>
+        <form id="skill-form">
+            <input type="hidden" id="skill-id" />
+            <label for="skill-name">Name:</label>
+            <input type="text" id="skill-name" required />
+            <label for="skill-level">Level:</label>
+            <input type="text" id="skill-level" required />
+            <button type="submit">Add Skill</button>
+            <button type="button" id="skill-cancel" style="display:none;">Cancel</button>
+        </form>
+        <ul id="skills-list"></ul>
+    </section>
+
+    <section id="projects-section">
+        <h2>Projects</h2>
+        <form id="project-form">
+            <input type="hidden" id="project-id" />
+            <label for="project-title">Title:</label>
+            <input type="text" id="project-title" required />
+            <label for="project-description">Description:</label>
+            <textarea id="project-description" rows="4" required></textarea>
+            <button type="submit">Add Project</button>
+            <button type="button" id="project-cancel" style="display:none;">Cancel</button>
+        </form>
+        <ul id="projects-list"></ul>
+    </section>
+
+    <script>
+        const apiBase = 'http://localhost:4001/api';
+
+        /* -------------------------------
+           SKILLS MANAGEMENT
+        --------------------------------*/
+        const skillForm = document.getElementById('skill-form');
+        const skillIdInput = document.getElementById('skill-id');
+        const skillNameInput = document.getElementById('skill-name');
+        const skillLevelInput = document.getElementById('skill-level');
+        const skillCancelBtn = document.getElementById('skill-cancel');
+        const skillsList = document.getElementById('skills-list');
+
+        function fetchSkills() {
+            fetch(`${apiBase}/skills`)
+                .then(res => res.json())
+                .then(data => {
+                    skillsList.innerHTML = '';
+                    data.forEach(skill => {
+                        const li = document.createElement('li');
+                        li.className = 'item';
+                        li.innerHTML = `
+                            <strong>${skill.name}</strong> - ${skill.level}
+                            <div class="actions">
+                                <button class="edit-skill">Edit</button>
+                                <button class="delete-skill">Delete</button>
+                            </div>
+                        `;
+
+                        li.querySelector('.edit-skill').addEventListener('click', () => {
+                            editSkill(skill.id, skill.name, skill.level);
+                        });
+
+                        li.querySelector('.delete-skill').addEventListener('click', () => {
+                            deleteSkill(skill.id);
+                        });
+
+                        skillsList.appendChild(li);
+                    });
+                });
+        }
+
+        function editSkill(id, name, level) {
+            skillIdInput.value = id;
+            skillNameInput.value = name;
+            skillLevelInput.value = level;
+            skillCancelBtn.style.display = 'inline';
+            skillForm.querySelector('button[type="submit"]').textContent = 'Update Skill';
+        }
+
+        function deleteSkill(id) {
+            if (confirm('Are you sure you want to delete this skill?')) {
+                fetch(`${apiBase}/skills/${id}`, { method: 'DELETE' })
+                    .then(() => fetchSkills());
+            }
+        }
+
+        skillCancelBtn.addEventListener('click', () => {
+            skillIdInput.value = '';
+            skillNameInput.value = '';
+            skillLevelInput.value = '';
+            skillCancelBtn.style.display = 'none';
+            skillForm.querySelector('button[type="submit"]').textContent = 'Add Skill';
+        });
+
+        skillForm.addEventListener('submit', e => {
+            e.preventDefault();
+            const id = skillIdInput.value;
+            const name = skillNameInput.value.trim();
+            const level = skillLevelInput.value.trim();
+            if (!name || !level) return;
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${apiBase}/skills/${id}` : `${apiBase}/skills`;
+
+            fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, level })
+            })
+            .then(() => {
+                skillCancelBtn.click();
+                fetchSkills();
+            });
+        });
+
+        /* -------------------------------
+           PROJECTS MANAGEMENT
+        --------------------------------*/
+        const projectForm = document.getElementById('project-form');
+        const projectIdInput = document.getElementById('project-id');
+        const projectTitleInput = document.getElementById('project-title');
+        const projectDescriptionInput = document.getElementById('project-description');
+        const projectCancelBtn = document.getElementById('project-cancel');
+        const projectsList = document.getElementById('projects-list');
+
+        function fetchProjects() {
+            fetch(`${apiBase}/projects`)
+                .then(res => res.json())
+                .then(data => {
+                    projectsList.innerHTML = '';
+                    data.forEach(project => {
+                        const li = document.createElement('li');
+                        li.className = 'item';
+                        li.innerHTML = `
+                            <strong>${project.title}</strong><br />
+                            <p>${project.description}</p>
+                            <div class="actions">
+                                <button class="edit-project">Edit</button>
+                                <button class="delete-project">Delete</button>
+                            </div>
+                        `;
+
+                        li.querySelector('.edit-project').addEventListener('click', () => {
+                            editProject(project.id, project.title, project.description);
+                        });
+
+                        li.querySelector('.delete-project').addEventListener('click', () => {
+                            deleteProject(project.id);
+                        });
+
+                        projectsList.appendChild(li);
+                    });
+                });
+        }
+
+        function editProject(id, title, description) {
+            projectIdInput.value = id;
+            projectTitleInput.value = title;
+            projectDescriptionInput.value = description;
+            projectCancelBtn.style.display = 'inline';
+            projectForm.querySelector('button[type="submit"]').textContent = 'Update Project';
+        }
+
+        function deleteProject(id) {
+            if (confirm('Are you sure you want to delete this project?')) {
+                fetch(`${apiBase}/projects/${id}`, { method: 'DELETE' })
+                    .then(() => fetchProjects());
+            }
+        }
+
+        projectCancelBtn.addEventListener('click', () => {
+            projectIdInput.value = '';
+            projectTitleInput.value = '';
+            projectDescriptionInput.value = '';
+            projectCancelBtn.style.display = 'none';
+            projectForm.querySelector('button[type="submit"]').textContent = 'Add Project';
+        });
+
+        projectForm.addEventListener('submit', e => {
+            e.preventDefault();
+            const id = projectIdInput.value;
+            const title = projectTitleInput.value.trim();
+            const description = projectDescriptionInput.value.trim();
+            if (!title || !description) return;
+
+            const method = id ? 'PUT' : 'POST';
+            const url = id ? `${apiBase}/projects/${id}` : `${apiBase}/projects`;
+
+            fetch(url, {
+                method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, description })
+            })
+            .then(() => {
+                projectCancelBtn.click();
+                fetchProjects();
+            });
+        });
+
+        /* -------------------------------
+           INITIAL FETCH
+        --------------------------------*/
+        fetchSkills();
+        fetchProjects();
+    </script>
+</body>
+</html>
